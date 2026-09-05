@@ -22,6 +22,7 @@ func (h *userHandler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		users.GET("/me", h.requireAuth(), h.getMe)
 		users.PATCH("/me", h.requireAuth(), h.updateMe)
+		users.POST("/me/avatar", h.requireAuth(), h.uploadAvatar)
 		users.GET("/me/liked", h.requireAuth(), h.liked)
 		users.GET("/me/saved", h.requireAuth(), h.saved)
 		users.GET("/me/history", h.requireAuth(), h.history)
@@ -55,6 +56,32 @@ func (h *userHandler) updateMe(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, profile)
+}
+
+func (h *userHandler) uploadAvatar(c *gin.Context) {
+	userID, _ := currentUserID(c)
+
+	file, header, err := c.Request.FormFile("avatar")
+	if err != nil {
+		respondError(c, exceptions.BadRequest("Прикрепите файл изображения."))
+		return
+	}
+	defer file.Close()
+
+	scheme := "http"
+	if c.Request.TLS != nil {
+		scheme = "https"
+	} else if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
+		scheme = proto
+	}
+	baseURL := scheme + "://" + c.Request.Host
+
+	user, err := h.services.Avatar.Upload(userID, file, header, baseURL)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, user)
 }
 
 func (h *userHandler) publicProfile(c *gin.Context) {

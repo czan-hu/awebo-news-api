@@ -24,6 +24,7 @@ type Services struct {
 	Forum          *services.ForumService
 	Search         *services.SearchService
 	CreatorRequest *services.CreatorRequestService
+	Avatar         *services.AvatarService
 }
 
 type Handler struct {
@@ -38,6 +39,8 @@ func NewHandler(s Services, cfg *config.Config) *Handler {
 func (h *Handler) InitRoutes() *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery(), corsMiddleware())
+	router.MaxMultipartMemory = h.cfg.MaxAvatarSizeMB * 1024 * 1024
+	router.Static("/uploads", h.cfg.UploadsDir)
 
 	api := router.Group(h.cfg.APIPrefix)
 

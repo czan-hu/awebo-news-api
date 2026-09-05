@@ -28,6 +28,9 @@ type Config struct {
 	SMTPUser     string
 	SMTPPassword string
 	SMTPFrom     string
+
+	UploadsDir      string
+	MaxAvatarSizeMB int64
 }
 
 func Load() *Config {
@@ -53,6 +56,9 @@ func Load() *Config {
 		SMTPUser:     getEnv("SMTP_USER", ""),
 		SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 		SMTPFrom:     getEnv("SMTP_FROM", "no-reply@awebo.example"),
+
+		UploadsDir:      getEnv("UPLOADS_DIR", "uploads"),
+		MaxAvatarSizeMB: int64(getEnvInt("MAX_AVATAR_SIZE_MB", 5)),
 	}
 }
 

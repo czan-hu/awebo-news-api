@@ -22,7 +22,7 @@ func (s *CategoryService) List() ([]entities.Category, error) {
 
 	result := make([]entities.Category, 0, len(categories))
 	for _, c := range categories {
-		result = append(result, entities.Category{Slug: c.Slug, Title: c.Title})
+		result = append(result, entities.Category{Slug: c.Slug, Title: c.Title, Icon: c.Icon})
 	}
 	return result, nil
 }

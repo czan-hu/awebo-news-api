@@ -54,6 +54,7 @@ func main() {
 		Forum:          services.NewForumService(forumRepo),
 		Search:         services.NewSearchService(articleRepo, forumRepo),
 		CreatorRequest: services.NewCreatorRequestService(creatorRequestRepo, userRepo),
+		Avatar:         services.NewAvatarService(userRepo, cfg),
 	}, cfg)
 
 	srv := new(infrastructure.Server)
