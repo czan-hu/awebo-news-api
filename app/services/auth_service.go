@@ -2,6 +2,7 @@ package services
 
 import (
 	"crypto/subtle"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -52,6 +53,7 @@ func (s *AuthService) RequestCode(email string) (*RequestCodeResult, error) {
 	}
 
 	if err := s.mailer.SendVerificationCode(email, code); err != nil {
+		log.Printf("mailer: failed to send verification code to %s: %v", email, err)
 		return nil, exceptions.Internal("Не удалось отправить письмо.")
 	}
 
