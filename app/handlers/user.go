@@ -68,15 +68,7 @@ func (h *userHandler) uploadAvatar(c *gin.Context) {
 	}
 	defer file.Close()
 
-	scheme := "http"
-	if c.Request.TLS != nil {
-		scheme = "https"
-	} else if proto := c.GetHeader("X-Forwarded-Proto"); proto != "" {
-		scheme = proto
-	}
-	baseURL := scheme + "://" + c.Request.Host
-
-	user, err := h.services.Avatar.Upload(userID, file, header, baseURL)
+	user, err := h.services.Avatar.Upload(userID, file, header)
 	if err != nil {
 		respondError(c, err)
 		return

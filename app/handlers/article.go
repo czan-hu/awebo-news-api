@@ -23,6 +23,7 @@ func (h *articleHandler) RegisterRoutes(router *gin.RouterGroup) {
 	{
 		articles.GET("", h.optionalAuth(), h.list)
 		articles.POST("", h.requireAuth(), h.requirePublisher(), h.create)
+		articles.POST("/images", h.requireAuth(), h.requirePublisher(), h.uploadImage)
 		articles.GET("/:slug", h.optionalAuth(), h.getBySlug)
 		articles.GET("/:slug/related", h.optionalAuth(), h.related)
 		articles.POST("/:slug/like", h.requireAuth(), h.like)
@@ -63,6 +64,25 @@ func (h *articleHandler) create(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, article)
+}
+
+// uploadImage stores a cover or inline content image for the article editor.
+// It's a standalone endpoint (not tied to a specific article) since the
+// image is picked before the article exists yet.
+func (h *articleHandler) uploadImage(c *gin.Context) {
+	file, header, err := c.Request.FormFile("image")
+	if err != nil {
+		respondError(c, exceptions.BadRequest("Прикрепите файл изображения."))
+		return
+	}
+	defer file.Close()
+
+	url, err := h.services.Upload.SaveImage("articles", file, header)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"url": url})
 }
 
 func (h *articleHandler) getBySlug(c *gin.Context) {

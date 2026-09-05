@@ -25,6 +25,7 @@ type Services struct {
 	Search         *services.SearchService
 	CreatorRequest *services.CreatorRequestService
 	Avatar         *services.AvatarService
+	Upload         *services.UploadService
 }
 
 type Handler struct {

@@ -36,6 +36,7 @@ func main() {
 	}
 
 	mailer := services.NewMailer(cfg)
+	uploadService := services.NewUploadService(cfg)
 
 	authRepo := repositories.NewAuthRepository(db)
 	userRepo := repositories.NewUserRepository(db)
@@ -54,7 +55,8 @@ func main() {
 		Forum:          services.NewForumService(forumRepo),
 		Search:         services.NewSearchService(articleRepo, forumRepo),
 		CreatorRequest: services.NewCreatorRequestService(creatorRequestRepo, userRepo),
-		Avatar:         services.NewAvatarService(userRepo, cfg),
+		Avatar:         services.NewAvatarService(userRepo, uploadService),
+		Upload:         uploadService,
 	}, cfg)
 
 	srv := new(infrastructure.Server)
