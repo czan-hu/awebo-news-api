@@ -15,6 +15,12 @@ type Mailer interface {
 }
 
 func NewMailer(cfg *config.Config) Mailer {
+	// На тестовом стенде почту не отправляем даже если настроен реальный
+	// SMTP — код просто уходит в лог, чтобы можно было пройти вход без
+	// доступа к почтовому ящику.
+	if cfg.TestServer {
+		return consoleMailer{}
+	}
 	if cfg.MailDriver == "smtp" {
 		return smtpMailer{cfg: cfg}
 	}

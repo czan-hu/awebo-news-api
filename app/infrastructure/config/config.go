@@ -31,6 +31,11 @@ type Config struct {
 
 	UploadsDir      string
 	MaxAvatarSizeMB int64
+
+	// TestServer — на тестовом стенде отключает реальную отправку писем:
+	// код подтверждения просто пишется в лог, запрос всё равно отвечает 200,
+	// так что можно спокойно тестировать вход без доступа к почте.
+	TestServer bool
 }
 
 func Load() *Config {
@@ -59,6 +64,8 @@ func Load() *Config {
 
 		UploadsDir:      getEnv("UPLOADS_DIR", "uploads"),
 		MaxAvatarSizeMB: int64(getEnvInt("MAX_AVATAR_SIZE_MB", 5)),
+
+		TestServer: getEnvBool("TEST_SERVER", false),
 	}
 }
 
@@ -73,6 +80,15 @@ func getEnvInt(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			return n
+		}
+	}
+	return fallback
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	if v := os.Getenv(key); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
 		}
 	}
 	return fallback

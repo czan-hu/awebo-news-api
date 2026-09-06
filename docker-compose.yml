@@ -7,13 +7,6 @@ services:
       - .env
     ports:
       - "8080:8080"
-<<<<<<< Updated upstream
-    volumes:
-      - uploads_data:/app/uploads
-    depends_on:
-      db:
-        condition: service_healthy
-=======
     networks:
       - awebo-network
 
@@ -21,7 +14,6 @@ networks:
   awebo-network:
     external: true
     name: awebo-network
->>>>>>> Stashed changes
 
 volumes:
   postgres_data:
