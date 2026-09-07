@@ -50,7 +50,7 @@ func main() {
 	handler := handlers.NewHandler(handlers.Services{
 		Auth:           services.NewAuthService(authRepo, cfg, mailer),
 		User:           services.NewUserService(userRepo),
-		Article:        services.NewArticleService(articleRepo, categoryRepo),
+		Article:        services.NewArticleService(articleRepo, categoryRepo, userRepo),
 		Category:       services.NewCategoryService(categoryRepo),
 		Contact:        services.NewContactService(contactRepo),
 		Newsletter:     services.NewNewsletterService(newsletterRepo),

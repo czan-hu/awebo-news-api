@@ -25,6 +25,8 @@ func (h *articleHandler) RegisterRoutes(router *gin.RouterGroup) {
 		articles.POST("", h.requireAuth(), h.requirePublisher(), h.create)
 		articles.POST("/images", h.requireAuth(), h.requirePublisher(), h.uploadImage)
 		articles.GET("/:slug", h.optionalAuth(), h.getBySlug)
+		articles.PUT("/:slug", h.requireAuth(), h.update)
+		articles.DELETE("/:slug", h.requireAuth(), h.remove)
 		articles.GET("/:slug/related", h.optionalAuth(), h.related)
 		articles.POST("/:slug/like", h.requireAuth(), h.like)
 		articles.DELETE("/:slug/like", h.requireAuth(), h.unlike)
@@ -64,6 +66,32 @@ func (h *articleHandler) create(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, article)
+}
+
+func (h *articleHandler) update(c *gin.Context) {
+	userID, _ := currentUserID(c)
+
+	var input dto.UpdateArticleInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		respondError(c, exceptions.BadRequest(""))
+		return
+	}
+
+	article, err := h.services.Article.Update(userID, c.Param("slug"), input)
+	if err != nil {
+		respondError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, article)
+}
+
+func (h *articleHandler) remove(c *gin.Context) {
+	userID, _ := currentUserID(c)
+	if err := h.services.Article.Delete(userID, c.Param("slug")); err != nil {
+		respondError(c, err)
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
 
 // uploadImage stores a cover or inline content image for the article editor.

@@ -9,9 +9,12 @@ import (
 
 // Author is the byline shown on an article card/detail page.
 type Author struct {
-	Name   string `json:"name"`
-	Role   string `json:"role"`
-	Avatar string `json:"avatar"`
+	Name string `json:"name"`
+	// Username lets the client link to /u/{username} and check whether the
+	// current viewer owns the article (edit/delete controls).
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	Avatar   string `json:"avatar"`
 }
 
 // ContentBlock is a flattened representation of the `ContentBlock` oneOf

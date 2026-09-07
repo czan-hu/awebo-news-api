@@ -17,10 +17,11 @@ import (
 type ArticleService struct {
 	repo         *repositories.ArticleRepository
 	categoryRepo *repositories.CategoryRepository
+	userRepo     *repositories.UserRepository
 }
 
-func NewArticleService(repo *repositories.ArticleRepository, categoryRepo *repositories.CategoryRepository) *ArticleService {
-	return &ArticleService{repo: repo, categoryRepo: categoryRepo}
+func NewArticleService(repo *repositories.ArticleRepository, categoryRepo *repositories.CategoryRepository, userRepo *repositories.UserRepository) *ArticleService {
+	return &ArticleService{repo: repo, categoryRepo: categoryRepo, userRepo: userRepo}
 }
 
 // Create publishes a new article on behalf of authorID. Callers must already
@@ -84,6 +85,99 @@ func (s *ArticleService) Create(authorID uuid.UUID, input dto.CreateArticleInput
 	copy(content, created.Content)
 
 	return &entities.Article{ArticleSummary: summary, Content: content}, nil
+}
+
+// Update edits an existing article. Only its author or an admin may do so;
+// the slug is deliberately left unchanged so existing links keep working.
+func (s *ArticleService) Update(userID uuid.UUID, slug string, input dto.UpdateArticleInput) (*entities.Article, error) {
+	article, err := s.repo.FindBySlug(slug)
+	if err != nil {
+		return nil, exceptions.Internal("")
+	}
+	if article == nil {
+		return nil, exceptions.NotFound("")
+	}
+	if !s.canManage(userID, article.AuthorID) {
+		return nil, exceptions.Forbidden("Редактировать статью может только её автор.")
+	}
+
+	categoryExists, err := s.categoryRepo.Exists(input.Category)
+	if err != nil {
+		return nil, exceptions.Internal("")
+	}
+	if !categoryExists {
+		return nil, exceptions.ValidationError("Проверьте правильность заполнения полей.", map[string]string{
+			"category": "Такого раздела не существует.",
+		})
+	}
+
+	if err := entities.ValidateContentBlocks(input.Content); err != nil {
+		return nil, exceptions.ValidationError(err.Error(), map[string]string{"content": err.Error()})
+	}
+
+	tags := make([]string, 0, len(input.Tags))
+	for _, t := range input.Tags {
+		if t = strings.TrimSpace(t); t != "" {
+			tags = append(tags, t)
+		}
+	}
+
+	article.Title = strings.TrimSpace(input.Title)
+	article.Excerpt = strings.TrimSpace(input.Excerpt)
+	article.CategorySlug = input.Category
+	article.Cover = input.Cover
+	article.ReadingMinutes = entities.EstimateReadingMinutes(input.Content)
+	article.Tags = tags
+	article.Content = input.Content
+
+	if err := s.repo.Update(article); err != nil {
+		return nil, exceptions.Internal("")
+	}
+
+	updated, err := s.repo.FindBySlug(slug)
+	if err != nil || updated == nil {
+		return nil, exceptions.Internal("")
+	}
+
+	summary, err := s.toSummary(*updated, &userID)
+	if err != nil {
+		return nil, err
+	}
+
+	content := make([]entities.ContentBlock, len(updated.Content))
+	copy(content, updated.Content)
+
+	return &entities.Article{ArticleSummary: summary, Content: content}, nil
+}
+
+// Delete removes an article. Only its author or an admin may do so.
+func (s *ArticleService) Delete(userID uuid.UUID, slug string) error {
+	article, err := s.repo.FindBySlug(slug)
+	if err != nil {
+		return exceptions.Internal("")
+	}
+	if article == nil {
+		return exceptions.NotFound("")
+	}
+	if !s.canManage(userID, article.AuthorID) {
+		return exceptions.Forbidden("Удалить статью может только её автор.")
+	}
+	if err := s.repo.Delete(article.ID); err != nil {
+		return exceptions.Internal("")
+	}
+	return nil
+}
+
+// canManage allows the article's own author, plus any admin.
+func (s *ArticleService) canManage(userID, authorID uuid.UUID) bool {
+	if userID == authorID {
+		return true
+	}
+	user, err := s.userRepo.FindByID(userID)
+	if err != nil || user == nil {
+		return false
+	}
+	return entities.IsAdmin(user.Role)
 }
 
 func (s *ArticleService) generateSlug(title string) (string, error) {
@@ -331,6 +425,15 @@ func (s *ArticleService) interaction(articleID int, slug string, userID uuid.UUI
 	return &entities.ArticleInteraction{Slug: slug, Liked: liked, Saved: saved, LikeCount: count}, nil
 }
 
+// authorUsername safely dereferences the nullable users.username column
+// (a freshly verified account has no username yet).
+func authorUsername(u models.User) string {
+	if u.Username == nil {
+		return ""
+	}
+	return *u.Username
+}
+
 func articleSummaryOf(a models.Article) entities.ArticleSummary {
 	return entities.ArticleSummary{
 		ID:             a.ID,
@@ -338,7 +441,7 @@ func articleSummaryOf(a models.Article) entities.ArticleSummary {
 		Title:          a.Title,
 		Excerpt:        a.Excerpt,
 		Category:       a.CategorySlug,
-		Author:         entities.Author{Name: a.Author.Name, Role: a.Author.Title, Avatar: a.Author.AvatarPath},
+		Author:         entities.Author{Name: a.Author.Name, Username: authorUsername(a.Author), Role: a.Author.Title, Avatar: a.Author.AvatarPath},
 		PublishedAt:    a.PublishedAt,
 		ReadingMinutes: a.ReadingMinutes,
 		Cover:          a.Cover,

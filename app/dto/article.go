@@ -13,6 +13,11 @@ type CreateArticleInput struct {
 	Content  []entities.ContentBlock `json:"content" binding:"required"`
 }
 
+// UpdateArticleInput is the body for `PUT /articles/{slug}`. Same shape as
+// CreateArticleInput; the author (or an admin) may edit every field except
+// the slug, which stays fixed so existing links keep working.
+type UpdateArticleInput = CreateArticleInput
+
 // ArticleListQuery binds `GET /articles` query parameters.
 type ArticleListQuery struct {
 	Category string `form:"category"`

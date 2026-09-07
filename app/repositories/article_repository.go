@@ -24,6 +24,21 @@ func (r *ArticleRepository) Create(article *models.Article) error {
 	return r.db.Create(article).Error
 }
 
+// Update rewrites the editable fields of an existing article (slug, author and
+// publish date stay untouched).
+func (r *ArticleRepository) Update(article *models.Article) error {
+	article.UpdatedAt = time.Now()
+	return r.db.Model(&models.Article{ID: article.ID}).
+		Select("Title", "Excerpt", "CategorySlug", "Cover", "ReadingMinutes", "Tags", "Content", "UpdatedAt").
+		Updates(article).Error
+}
+
+// Delete hard-deletes the article; article_likes/saves/views rows are removed
+// by ON DELETE CASCADE (see 000005_create_article_engagement_tables).
+func (r *ArticleRepository) Delete(id int) error {
+	return r.db.Delete(&models.Article{}, "id = ?", id).Error
+}
+
 type ArticleFilter struct {
 	Category string
 	Tag      string
