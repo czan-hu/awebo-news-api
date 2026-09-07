@@ -20,6 +20,7 @@ type Services struct {
 	User           *services.UserService
 	Article        *services.ArticleService
 	Category       *services.CategoryService
+	Contact        *services.ContactService
 	Newsletter     *services.NewsletterService
 	Forum          *services.ForumService
 	Search         *services.SearchService
@@ -49,6 +50,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	newUserHandler(h).RegisterRoutes(api)
 	newArticleHandler(h).RegisterRoutes(api)
 	newCategoryHandler(h).RegisterRoutes(api)
+	newContactHandler(h).RegisterRoutes(api)
 	newNewsletterHandler(h).RegisterRoutes(api)
 	newForumHandler(h).RegisterRoutes(api)
 	newSearchHandler(h).RegisterRoutes(api)

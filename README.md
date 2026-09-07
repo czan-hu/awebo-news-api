@@ -86,7 +86,9 @@ go run ./cmd
 Все эндпоинты из `docs/openapi.yaml`: Auth (код на почту → verify →
 complete-profile, logout), Users (профиль, публичная страница, liked/saved/
 history, статьи автора), Articles (лента с фильтрами category/tag/author/
-featured/sort, детальная, related, like/save/view), Categories, Newsletter,
+featured/sort, детальная, related, like/save/view), Categories,
+Contacts (`GET /contacts` — способы связи для подвала, наполняется в БД),
+Newsletter,
 Forum (темы, плоские комментарии с `parentId`, голосование с автогоном
 score=1 при создании комментария), Search.
 

@@ -42,6 +42,7 @@ func main() {
 	userRepo := repositories.NewUserRepository(db)
 	articleRepo := repositories.NewArticleRepository(db)
 	categoryRepo := repositories.NewCategoryRepository(db)
+	contactRepo := repositories.NewContactRepository(db)
 	newsletterRepo := repositories.NewNewsletterRepository(db)
 	forumRepo := repositories.NewForumRepository(db)
 	creatorRequestRepo := repositories.NewCreatorRequestRepository(db)
@@ -51,6 +52,7 @@ func main() {
 		User:           services.NewUserService(userRepo),
 		Article:        services.NewArticleService(articleRepo, categoryRepo),
 		Category:       services.NewCategoryService(categoryRepo),
+		Contact:        services.NewContactService(contactRepo),
 		Newsletter:     services.NewNewsletterService(newsletterRepo),
 		Forum:          services.NewForumService(forumRepo),
 		Search:         services.NewSearchService(articleRepo, forumRepo),
