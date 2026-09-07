@@ -18,7 +18,7 @@ VALUES (
     '00000000-0000-0000-0000-000000000002',
     now(),
     4,
-    '',
+    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS7Vy5r4W8n2ZULdtZahdSeCsMKDrBiOJlzNxSrkwlCYPzLeZsqmwMWobg6&s=10',
     FALSE,
     '["природа", "куропатка", "тундра", "символ"]',
     '[
