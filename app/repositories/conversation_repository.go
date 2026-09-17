@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"database/sql"
 	"errors"
 	"time"
 
@@ -23,22 +24,27 @@ func NewConversationRepository(db *gorm.DB) *ConversationRepository {
 // v1 only ever creates two-participant conversations, so "the conversation
 // with exactly these two participants" is unambiguous.
 func (r *ConversationRepository) FindOrCreateDirect(userA, userB uuid.UUID) (*models.Conversation, error) {
+	// .Row().Scan (raw database/sql scanning) rather than GORM's own .Scan —
+	// uuid.UUID is a [16]byte under the hood, and GORM's reflection-based
+	// Scan treats array-kind destinations as "one row per element" instead
+	// of respecting uuid.UUID's sql.Scanner implementation, which fails with
+	// "converting driver.Value type string ... to a uint8".
 	var existingID uuid.UUID
-	err := r.db.Table("conversation_participants AS cp1").
+	row := r.db.Table("conversation_participants AS cp1").
 		Select("cp1.conversation_id").
 		Joins("JOIN conversation_participants AS cp2 ON cp2.conversation_id = cp1.conversation_id AND cp2.user_id = ?", userB).
 		Where("cp1.user_id = ?", userA).
 		Limit(1).
-		Scan(&existingID).Error
-	if err != nil {
-		return nil, err
-	}
-	if existingID != uuid.Nil {
+		Row()
+	switch err := row.Scan(&existingID); {
+	case err == nil:
 		return r.FindByID(existingID)
+	case !errors.Is(err, sql.ErrNoRows):
+		return nil, err
 	}
 
 	conversation := &models.Conversation{ID: uuid.New()}
-	err = r.db.Transaction(func(tx *gorm.DB) error {
+	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(conversation).Error; err != nil {
 			return err
 		}
@@ -104,11 +110,12 @@ func (r *ConversationRepository) IsParticipant(conversationID, userID uuid.UUID)
 // always have exactly two participants.
 func (r *ConversationRepository) OtherParticipant(conversationID, userID uuid.UUID) (uuid.UUID, error) {
 	var otherID uuid.UUID
-	err := r.db.Model(&models.ConversationParticipant{}).
+	row := r.db.Model(&models.ConversationParticipant{}).
 		Select("user_id").
 		Where("conversation_id = ? AND user_id <> ?", conversationID, userID).
 		Limit(1).
-		Scan(&otherID).Error
+		Row()
+	err := row.Scan(&otherID)
 	return otherID, err
 }
 

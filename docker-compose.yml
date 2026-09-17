@@ -7,6 +7,12 @@ services:
       - .env
     ports:
       - "8080:8080"
+    volumes:
+      # UPLOADS_DIR=uploads (относительный, см. .env.example) резолвится от
+      # WORKDIR контейнера — /app/uploads. Без этого тома аватарки/картинки
+      # статей/постов живут в эфемерном слое контейнера и пропадают при
+      # каждом пересоздании (docker-compose up --build и т.п.).
+      - uploads_data:/app/uploads
     networks:
       - awebo-network
 
