@@ -77,7 +77,7 @@ func (h *userHandler) uploadAvatar(c *gin.Context) {
 }
 
 func (h *userHandler) publicProfile(c *gin.Context) {
-	profile, err := h.services.User.GetProfileByUsername(c.Param("username"))
+	profile, err := h.services.User.GetProfileByUsername(c.Param("username"), viewerFromContext(c))
 	if err != nil {
 		respondError(c, err)
 		return

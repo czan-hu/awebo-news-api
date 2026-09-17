@@ -443,6 +443,7 @@ func articleSummaryOf(a models.Article) entities.ArticleSummary {
 		Category:       a.CategorySlug,
 		Author:         entities.Author{Name: a.Author.Name, Username: authorUsername(a.Author), Role: a.Author.Title, Avatar: a.Author.AvatarPath},
 		PublishedAt:    a.PublishedAt,
+		UpdatedAt:      a.UpdatedAt,
 		ReadingMinutes: a.ReadingMinutes,
 		Cover:          a.Cover,
 		Tags:           append([]string{}, a.Tags...),

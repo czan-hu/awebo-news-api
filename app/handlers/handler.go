@@ -9,6 +9,7 @@ import (
 
 	"awebo/app/exceptions"
 	"awebo/app/infrastructure/config"
+	"awebo/app/infrastructure/realtime"
 	"awebo/app/services"
 )
 
@@ -27,15 +28,23 @@ type Services struct {
 	CreatorRequest *services.CreatorRequestService
 	Avatar         *services.AvatarService
 	Upload         *services.UploadService
+	Post           *services.PostService
+	Friendship     *services.FriendshipService
+	Conversation   *services.ConversationService
 }
 
 type Handler struct {
 	services Services
 	cfg      *config.Config
+	// hub is a cross-cutting singleton, not a feature service — the realtime
+	// handler registers connections on it directly, while ConversationService
+	// gets its own reference at construction time in cmd/main.go to push
+	// messages.
+	hub *realtime.Hub
 }
 
-func NewHandler(s Services, cfg *config.Config) *Handler {
-	return &Handler{services: s, cfg: cfg}
+func NewHandler(s Services, cfg *config.Config, hub *realtime.Hub) *Handler {
+	return &Handler{services: s, cfg: cfg, hub: hub}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
@@ -55,6 +64,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	newForumHandler(h).RegisterRoutes(api)
 	newSearchHandler(h).RegisterRoutes(api)
 	newCreatorRequestHandler(h).RegisterRoutes(api)
+	newPostHandler(h).RegisterRoutes(api)
+	newFriendshipHandler(h).RegisterRoutes(api)
+	newConversationHandler(h).RegisterRoutes(api)
+	newRealtimeHandler(h).RegisterRoutes(api)
 
 	return router
 }

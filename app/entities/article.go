@@ -38,6 +38,9 @@ type ArticleSummary struct {
 	Category       string    `json:"category"`
 	Author         Author    `json:"author"`
 	PublishedAt    time.Time `json:"publishedAt"`
+	// UpdatedAt changes on every edit (PublishedAt does not) — the frontend
+	// uses it for <lastmod> in sitemap.xml and article:modified_time.
+	UpdatedAt      time.Time `json:"updatedAt"`
 	ReadingMinutes int       `json:"readingMinutes"`
 	Cover          string    `json:"cover"`
 	Tags           []string  `json:"tags"`

@@ -14,6 +14,7 @@ import (
 	"awebo/app/handlers"
 	"awebo/app/infrastructure/config"
 	"awebo/app/infrastructure/database"
+	"awebo/app/infrastructure/realtime"
 	"awebo/app/infrastructure/server"
 	"awebo/app/repositories"
 	"awebo/app/services"
@@ -46,20 +47,28 @@ func main() {
 	newsletterRepo := repositories.NewNewsletterRepository(db)
 	forumRepo := repositories.NewForumRepository(db)
 	creatorRequestRepo := repositories.NewCreatorRequestRepository(db)
+	postRepo := repositories.NewPostRepository(db)
+	friendshipRepo := repositories.NewFriendshipRepository(db)
+	conversationRepo := repositories.NewConversationRepository(db)
+
+	hub := realtime.NewHub()
 
 	handler := handlers.NewHandler(handlers.Services{
 		Auth:           services.NewAuthService(authRepo, cfg, mailer),
-		User:           services.NewUserService(userRepo),
+		User:           services.NewUserService(userRepo, friendshipRepo),
 		Article:        services.NewArticleService(articleRepo, categoryRepo, userRepo),
 		Category:       services.NewCategoryService(categoryRepo),
 		Contact:        services.NewContactService(contactRepo),
 		Newsletter:     services.NewNewsletterService(newsletterRepo),
 		Forum:          services.NewForumService(forumRepo),
-		Search:         services.NewSearchService(articleRepo, forumRepo),
+		Search:         services.NewSearchService(articleRepo, forumRepo, userRepo),
 		CreatorRequest: services.NewCreatorRequestService(creatorRequestRepo, userRepo),
 		Avatar:         services.NewAvatarService(userRepo, uploadService),
 		Upload:         uploadService,
-	}, cfg)
+		Post:           services.NewPostService(postRepo, friendshipRepo),
+		Friendship:     services.NewFriendshipService(friendshipRepo, userRepo),
+		Conversation:   services.NewConversationService(conversationRepo, userRepo, hub),
+	}, cfg, hub)
 
 	srv := new(infrastructure.Server)
 

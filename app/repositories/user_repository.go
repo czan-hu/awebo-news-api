@@ -78,6 +78,19 @@ func (r *UserRepository) ListLinks(userID uuid.UUID) ([]models.UserLink, error) 
 	return links, nil
 }
 
+func (r *UserRepository) Search(q string, limit int) ([]models.User, error) {
+	var users []models.User
+	like := "%" + q + "%"
+	if err := r.db.
+		Where("name ILIKE ? OR username ILIKE ?", like, like).
+		Order("name ASC").
+		Limit(limit).
+		Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 type UserStatsRow struct {
 	Articles int64
 	Liked    int64

@@ -116,6 +116,38 @@ func (h *Handler) requireAdmin() gin.HandlerFunc {
 	}
 }
 
+// wsAuth authenticates the WebSocket upgrade handshake. Browsers can't set
+// a custom Authorization header on that request, so the token travels as a
+// `?token=` query parameter instead — the only route that accepts a token
+// this way. Rejects with 401 before any upgrade attempt on failure.
+func (h *Handler) wsAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.Query("token")
+		if token == "" {
+			respondError(c, exceptions.Unauthorized(""))
+			c.Abort()
+			return
+		}
+
+		claims, err := jwtutil.Parse(token, h.cfg.JWTSecret)
+		if err != nil {
+			respondError(c, exceptions.Unauthorized(""))
+			c.Abort()
+			return
+		}
+
+		userID, err := uuid.Parse(claims.UserID)
+		if err != nil {
+			respondError(c, exceptions.Unauthorized(""))
+			c.Abort()
+			return
+		}
+
+		c.Set(userIDContextKey, userID)
+		c.Next()
+	}
+}
+
 func currentUserID(c *gin.Context) (uuid.UUID, bool) {
 	v, ok := c.Get(userIDContextKey)
 	if !ok {

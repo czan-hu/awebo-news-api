@@ -61,4 +61,8 @@ type UserProfile struct {
 	JoinedAt time.Time  `json:"joinedAt"`
 	Links    []UserLink `json:"links"`
 	Stats    UserStats  `json:"stats"`
+	// FriendshipStatus is the viewer's relationship to this profile — one of
+	// the FriendshipView* consts. Nil when viewing your own profile or when
+	// logged out (no viewer to compute a relationship for).
+	FriendshipStatus *string `json:"friendshipStatus,omitempty"`
 }

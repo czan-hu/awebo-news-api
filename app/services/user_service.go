@@ -12,11 +12,12 @@ import (
 )
 
 type UserService struct {
-	repo *repositories.UserRepository
+	repo           *repositories.UserRepository
+	friendshipRepo *repositories.FriendshipRepository
 }
 
-func NewUserService(repo *repositories.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewUserService(repo *repositories.UserRepository, friendshipRepo *repositories.FriendshipRepository) *UserService {
+	return &UserService{repo: repo, friendshipRepo: friendshipRepo}
 }
 
 func (s *UserService) GetAuthUser(userID uuid.UUID) (*entities.AuthUser, error) {
@@ -30,7 +31,7 @@ func (s *UserService) GetAuthUser(userID uuid.UUID) (*entities.AuthUser, error) 
 	return toAuthUser(user), nil
 }
 
-func (s *UserService) GetProfileByUsername(username string) (*entities.UserProfile, error) {
+func (s *UserService) GetProfileByUsername(username string, viewerID *uuid.UUID) (*entities.UserProfile, error) {
 	user, err := s.repo.FindByUsername(username)
 	if err != nil {
 		return nil, exceptions.Internal("")
@@ -38,7 +39,7 @@ func (s *UserService) GetProfileByUsername(username string) (*entities.UserProfi
 	if user == nil {
 		return nil, exceptions.NotFound("Пользователь не найден.")
 	}
-	return s.buildProfile(user)
+	return s.buildProfile(user, viewerID)
 }
 
 func (s *UserService) UpdateProfile(userID uuid.UUID, input dto.UpdateProfileInput) (*entities.UserProfile, error) {
@@ -103,10 +104,10 @@ func (s *UserService) UpdateProfile(userID uuid.UUID, input dto.UpdateProfileInp
 		}
 	}
 
-	return s.buildProfile(updated)
+	return s.buildProfile(updated, nil)
 }
 
-func (s *UserService) buildProfile(user *models.User) (*entities.UserProfile, error) {
+func (s *UserService) buildProfile(user *models.User, viewerID *uuid.UUID) (*entities.UserProfile, error) {
 	links, err := s.repo.ListLinks(user.ID)
 	if err != nil {
 		return nil, exceptions.Internal("")
@@ -119,6 +120,15 @@ func (s *UserService) buildProfile(user *models.User) (*entities.UserProfile, er
 	entityLinks := make([]entities.UserLink, 0, len(links))
 	for _, l := range links {
 		entityLinks = append(entityLinks, entities.UserLink{Label: l.Label, URL: l.URL, Icon: l.Icon})
+	}
+
+	var friendshipStatus *string
+	if viewerID != nil && *viewerID != user.ID {
+		status, err := s.resolveFriendshipView(*viewerID, user.ID)
+		if err != nil {
+			return nil, exceptions.Internal("")
+		}
+		friendshipStatus = &status
 	}
 
 	return &entities.UserProfile{
@@ -136,7 +146,31 @@ func (s *UserService) buildProfile(user *models.User) (*entities.UserProfile, er
 			Saved:    stats.Saved,
 			History:  stats.History,
 		},
+		FriendshipStatus: friendshipStatus,
 	}, nil
+}
+
+// resolveFriendshipView reports the viewer's relationship to profileID, as
+// one of the entities.FriendshipView* consts.
+func (s *UserService) resolveFriendshipView(viewerID, profileID uuid.UUID) (string, error) {
+	f, err := s.friendshipRepo.FindPair(viewerID, profileID)
+	if err != nil {
+		return "", err
+	}
+	if f == nil {
+		return entities.FriendshipViewNone, nil
+	}
+	switch f.Status {
+	case entities.FriendshipAccepted:
+		return entities.FriendshipViewFriends, nil
+	case entities.FriendshipPending:
+		if f.RequesterID == viewerID {
+			return entities.FriendshipViewPendingOutgoing, nil
+		}
+		return entities.FriendshipViewPendingIncoming, nil
+	default:
+		return entities.FriendshipViewNone, nil
+	}
 }
 
 func usernameOf(u models.User) string {
